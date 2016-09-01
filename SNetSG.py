@@ -110,14 +110,22 @@ class SNetSgAverage(Word2Vec):
         wrw_weights = tf.expand_dims(wrw_weights, 2)
         synonyms_emb_reshaped_weighted = tf.mul(synonyms_emb_reshaped, wrw_weights)
 
+        # the 1st method getting the embedding
         synonyms_emb_reshaped_weighted_mean = tf.reduce_mean(synonyms_emb_reshaped_weighted, 1)
-        
+        example_emb_syn_mean = tf.reduce_mean(
+            tf.reshape(
+                tf.concat(1, [example_emb, synonyms_emb_reshaped_weighted_mean]),
+                [opts.batch_size, 2, opts.emb_dim]
+            ), 1
+        )
 
-        # get the mean embedding of the synonyms
-        example_emb_syn = tf.concat(1,
-                                    [tf.expand_dims(example_emb, 1),
-                                     synonyms_emb_reshaped_weighted])
-        example_emb_syn_mean = tf.reduce_mean(example_emb_syn, 1)
+
+        # the 2nd method getting the mean embedding of the synonyms
+        # sometimes diverges. do not know why.
+        # example_emb_syn = tf.concat(1,
+        #                             [tf.expand_dims(example_emb, 1),
+        #                              synonyms_emb_reshaped_weighted])
+        # example_emb_syn_mean = tf.reduce_mean(example_emb_syn, 1)
 
         # Weights for labels: [batch_size, emb_dim]
         true_w = tf.nn.embedding_lookup(sm_w_t, labels)
