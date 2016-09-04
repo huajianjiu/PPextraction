@@ -155,14 +155,14 @@ class SNetSgAverage(Word2Vec):
         synonyms_flat = tf.reshape(self._syn_relations, [-1])
         synonyms_emb = tf.nn.embedding_lookup(self._emb, synonyms_flat)
         synonyms_emb_reshaped = tf.reshape(synonyms_emb,
-                                           [opts.batch_size, opts.relations_num, opts.emb_dim])
+                                           [opts.vocab_size, opts.relations_num, opts.emb_dim])
         wrw_weights = tf.expand_dims(self._wrw, 2)
         synonyms_emb_reshaped_weighted = tf.mul(synonyms_emb_reshaped, wrw_weights)
         synonyms_emb_reshaped_weighted_mean = tf.reduce_mean(synonyms_emb_reshaped_weighted, 1)
         emb_syn_mean = tf.reduce_mean(
             tf.reshape(
                 tf.concat(1, [self._emb, synonyms_emb_reshaped_weighted_mean]),
-                [opts.batch_size, 2, opts.emb_dim]
+                [opts.vocab_size, 2, opts.emb_dim]
             ), 1
         )
         return emb_syn_mean
