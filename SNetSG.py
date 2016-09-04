@@ -149,6 +149,78 @@ class SNetSgAverage(Word2Vec):
                                    transpose_b=True) + sampled_b_vec
         return true_logits, sampled_logits
 
+    def get_final_emb(self):
+        # get the averaged embeddings of the input and its related words as the output embeddings
+        opts = self._options
+        synonyms_flat = tf.reshape(self._syn_relations, [-1])
+        synonyms_emb = tf.nn.embedding_lookup(self._emb, synonyms_flat)
+        synonyms_emb_reshaped = tf.reshape(synonyms_emb,
+                                           [opts.batch_size, opts.relations_num, opts.emb_dim])
+        wrw_weights = tf.expand_dims(self._wrw, 2)
+        synonyms_emb_reshaped_weighted = tf.mul(synonyms_emb_reshaped, wrw_weights)
+        synonyms_emb_reshaped_weighted_mean = tf.reduce_mean(synonyms_emb_reshaped_weighted, 1)
+        emb_syn_mean = tf.reduce_mean(
+            tf.reshape(
+                tf.concat(1, [self._emb, synonyms_emb_reshaped_weighted_mean]),
+                [opts.batch_size, 2, opts.emb_dim]
+            ), 1
+        )
+        return emb_syn_mean
+
+
+    def build_eval_graph(self):
+        """Build the eval graph."""
+        # Eval graph
+
+        # Each analogy task is to predict the 4th word (d) given three
+        # words: a, b, c.  E.g., a=italy, b=rome, c=france, we should
+        # predict d=paris.
+
+        # The eval feeds three vectors of word ids for a, b, c, each of
+        # which is of size N, where N is the number of analogies we want to
+        # evaluate in one batch.
+        analogy_a = tf.placeholder(dtype=tf.int32)  # [N]
+        analogy_b = tf.placeholder(dtype=tf.int32)  # [N]
+        analogy_c = tf.placeholder(dtype=tf.int32)  # [N]
+
+        # Normalized word embeddings of shape [vocab_size, emb_dim].
+        emb = self.get_final_emb()
+        nemb = tf.nn.l2_normalize(emb, 1)
+
+        # Each row of a_emb, b_emb, c_emb is a word's embedding vector.
+        # They all have the shape [N, emb_dim]
+        a_emb = tf.gather(nemb, analogy_a)  # a's embs
+        b_emb = tf.gather(nemb, analogy_b)  # b's embs
+        c_emb = tf.gather(nemb, analogy_c)  # c's embs
+
+        # We expect that d's embedding vectors on the unit hyper-sphere is
+        # near: c_emb + (b_emb - a_emb), which has the shape [N, emb_dim].
+        target = c_emb + (b_emb - a_emb)
+
+        # Compute cosine distance between each pair of target and vocab.
+        # dist has shape [N, vocab_size].
+        dist = tf.matmul(target, nemb, transpose_b=True)
+
+        # For each question (row in dist), find the top 4 words.
+        _, pred_idx = tf.nn.top_k(dist, 4)
+
+        # Nodes for computing neighbors for a given word according to
+        # their cosine distance.
+        nearby_word = tf.placeholder(dtype=tf.int32)  # word id
+        nearby_emb = tf.gather(nemb, nearby_word)
+        nearby_dist = tf.matmul(nearby_emb, nemb, transpose_b=True)
+        nearby_val, nearby_idx = tf.nn.top_k(nearby_dist,
+                                             min(1000, self._options.vocab_size))
+
+        # Nodes in the construct graph which are used by training and
+        # evaluation to run/feed/fetch.
+        self._analogy_a = analogy_a
+        self._analogy_b = analogy_b
+        self._analogy_c = analogy_c
+        self._analogy_pred_idx = pred_idx
+        self._nearby_word = nearby_word
+        self._nearby_val = nearby_val
+        self._nearby_idx = nearby_idx
 
 class SNetSgSoftmax(Word2Vec):
     def __init__(self, options, session, syn_relations):
