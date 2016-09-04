@@ -226,7 +226,7 @@ class SNetSgAverage(Word2Vec):
 class SNetSgSum(Word2Vec):
     def __init__(self, options, session, syn_relations):
         self._syn_relations = tf.constant(syn_relations)
-        super(SNetSgAverage, self).__init__(options, session)
+        super(SNetSgSum, self).__init__(options, session)
 
     def forward(self, examples, labels):
         syn_relations = self._session.run(self._syn_relations)
