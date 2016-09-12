@@ -37,6 +37,25 @@ class SNetSgAverage(Word2Vec):
         self._syn_relations = tf.constant(syn_relations)
         super(SNetSgAverage, self).__init__(options, session)
 
+    def nce_loss(self, true_logits, sampled_logits):
+        """Build the graph for the NCE loss."""
+
+        # cross-entropy(logits, labels)
+        opts = self._options
+        true_xent = tf.nn.sigmoid_cross_entropy_with_logits(
+            true_logits, tf.ones_like(true_logits))
+        true_xent = tf.check_numerics(true_xent, "true_xent nan")
+
+        sampled_xent = tf.nn.sigmoid_cross_entropy_with_logits(
+            sampled_logits, tf.zeros_like(sampled_logits))
+        sampled_xent = tf.check_numerics(sampled_xent, "sampled_xent nan")
+
+        # NCE-loss is the sum of the true and noise (sampled words)
+        # contributions, averaged over the batch.
+        nce_loss_tensor = (tf.reduce_sum(true_xent) +
+                           tf.reduce_sum(sampled_xent)) / opts.batch_size
+        return nce_loss_tensor
+
     def forward(self, examples, labels):
         syn_relations = self._session.run(self._syn_relations)
 
@@ -118,6 +137,7 @@ class SNetSgAverage(Word2Vec):
                 [opts.batch_size, 2, opts.emb_dim]
             ), 1
         )
+        example_emb_syn_mean = tf.check_numerics(example_emb_syn_mean, "emb_syn_mean nan")
 
 
         # the 2nd method getting the mean embedding of the synonyms
@@ -147,6 +167,8 @@ class SNetSgAverage(Word2Vec):
         sampled_logits = tf.matmul(example_emb_syn_mean,
                                    sampled_w,
                                    transpose_b=True) + sampled_b_vec
+        true_logits = tf.check_numerics(true_logits, "true_logits nan")
+        sampled_logits = tf.check_numerics(sampled_logits, "sampled_logits nan")
         return true_logits, sampled_logits
 
     def get_final_emb(self):
@@ -553,7 +575,7 @@ def main(_):
     syn_relations = WordnetNet(opts.relations_num).synsets_relations
     with tf.Graph().as_default(), tf.Session() as session:
         with tf.device("/cpu:0"):
-            model = SNetSgSum(opts, session, syn_relations)
+            model = SNetSgAverage(opts, session, syn_relations)
             model.read_analogies() # Read analogy questions
         for _ in xrange(opts.epochs_to_train):
             model.train()  # Process one epoch
