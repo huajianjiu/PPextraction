@@ -28,7 +28,7 @@ class WordnetNet(object):
             with open("wn_" + self.vocab + str(self.relations_num) + ".pkl", "rb") as f_load:
                 self.words = pickle.load(f_load)
                 self.synsets_relations = pickle.load(f_load)
-                self.scores_matrix = pickle.load(f_load)
+                # self.scores_matrix = pickle.load(f_load)
         else:
             with open(vocab, "r") as f_vocab:
                 words = f_vocab.readlines()
@@ -41,8 +41,6 @@ class WordnetNet(object):
                 for synset in synsets:
                     current_word_relations += [str(lemma.name()) for lemma in synset.lemmas()]
                     hypos = synset.hyponyms()
-                    for hypo in hypos:
-                        current_word_relations += [str(lemma.name()) for lemma in hypo.lemmas()]
                     holos = synset.member_holonyms()
                     for holo in holos:
                         current_word_relations += [str(lemma.name()) for lemma in holo.lemmas()]
@@ -57,10 +55,10 @@ class WordnetNet(object):
         with open("wn_"+self.vocab+str(self.relations_num)+".pkl", "wb") as f_save:
             pickle.dump(self.words, f_save)
             pickle.dump(self.synsets_relations, f_save)
-            pickle.dump(self.scores_matrix, f_save)
+            # pickle.dump(self.scores_matrix, f_save)
 
 
 if __name__ == "__main__":
     wordnet_net = WordnetNet(5)
     for i in range(100):
-        print wordnet_net.synsets_relations[i+100]
+        print str(wordnet_net.words[i+100])+":"+str(wordnet_net.synsets_relations[i+100])
