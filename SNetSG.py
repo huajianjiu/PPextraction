@@ -307,10 +307,6 @@ class SNetSgAvReNoWeight(SNetSgAverage):
         synonyms_emb = tf.nn.embedding_lookup(emb, synonyms_flat)
 
         # get weighted average of the embedding of synonyms
-        # TODO: this is one of the ideas. remember to try:
-        # TODO: 1.use trusted  paraphrase database
-        # TODO: 2.use a softmax with biased threshold to train the synonym-layer to
-        # TODO: trusted  paraphrase database
         # change synonyms_emb to synonyms_emb_reshape:[batch_size, relations_num, emb_dim]
         synonyms_emb_reshaped = tf.reshape(synonyms_emb, [opts.batch_size, opts.relations_num, opts.emb_dim])
 
