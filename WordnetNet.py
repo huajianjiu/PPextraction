@@ -40,7 +40,6 @@ class WordnetNet(object):
                 synsets = wn.synsets(word)
                 for synset in synsets:
                     current_word_relations += [str(lemma.name()) for lemma in synset.lemmas()]
-                    hypos = synset.hyponyms()
                     holos = synset.member_holonyms()
                     for holo in holos:
                         current_word_relations += [str(lemma.name()) for lemma in holo.lemmas()]
