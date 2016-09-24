@@ -12,11 +12,11 @@ def remove_duplicate(list1):
     return list2
 
 
-def remove_not_in_and_get_word_id(list1, self_word, legal_word_list):
+def remove_not_in_and_get_word_id(current_word_relations, self_word, vocab_words):
     list2 = []
-    for i in list1:
-        if i != self_word and i in legal_word_list and i not in list2:
-            list2.append(legal_word_list.index(i))
+    for i in current_word_relations:
+        if i != self_word and i in vocab_words and i not in list2:
+            list2.append(vocab_words.index(i))
     return list2
 
 
