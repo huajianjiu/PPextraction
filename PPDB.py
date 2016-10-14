@@ -27,7 +27,7 @@ class PPDBs4vocab(object):
                 if word in ppdb_paraphrases.keys():
                     self.paraphrases[i][0] = self.words.index(ppdb_paraphrases[word])
 
-    def save_wordnet(self, pkl=True, text=True):
+    def save_ppdb(self, pkl=True, text=True):
         if pkl:
             with open("ppdb_s_"+self.vocab+str(self.relations_num)+".pkl", "wb") as f_save:
                 pickle.dump(self.words, f_save)
@@ -45,13 +45,47 @@ class PPDBs4vocab(object):
 
 class PPDB_2(object):
     def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
-        pass
+        self.vocab = vocab
+        with open(vocab, "r") as f_vocab:
+                words = f_vocab.readlines()
+                words = [x.split()[0] for x in words]
+                self.words = words
+        with open(ppdb, "r") as ppdb_f:
+            ppdb_paraphrases = {}
+            for line in ppdb_f.readlines():
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        ppdb_paraphrases[line.split("|||")[1].strip()] = line.split("|||")[2].strip()
+                        ppdb_paraphrases[line.split("|||")[2].strip()] = line.split("|||")[1].strip()
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        ppdb_paraphrases[line.split("|||")[1].strip()] = line.split("|||")[2].strip()
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        ppdb_paraphrases[line.split("|||")[2].strip()] = line.split("|||")[1].strip()
+        self.paraphrases_words=ppdb_paraphrases
+        self.paraphrases = np.zeros((len(self.words), relations_num), dtype=np.int32)
+        for i, word in enumerate(words):
+            if word in ppdb_paraphrases.keys():
+                self.paraphrases[i][0] = self.words.index(ppdb_paraphrases[word])
     def save_ppdb(slef, pkl=False, text=True):
-        pass
+        if pkl:
+            with open("ppdb_2_"+self.vocab+".pkl", "wb") as f_save:
+                pickle.dump(self.words, f_save)
+                pickle.dump(self.paraphrases, f_save)
+        if text:
+            with open("ppdb_2_"+self.vocab+".txt", "w") as f_save:
+                for word in self.words:
+                    if word == "UNK":
+                        write_line = "</s> </s>\n"
+                    elif word in self.paraphrases_words.keys():
+                        write_line = str(word) + " " + str(self.paraphrases_words[word]) + "\n"
+                    else:
+                        write_line = str(word) + " </s>\n"
+                    f_save.write(write_line)
+
 
 if __name__ == "__main__":
-    ppdb_s_corpus = PPDBs4vocab()
-    ppdb_s_corpus.save_wordnet(True, True)
+    ppdb_s_corpus = PPDB_2()
+    ppdb_s_corpus.save_ppdb()
     for i in range(100):
         print str(ppdb_s_corpus.words[i])+":"+str(ppdb_s_corpus.paraphrases[i])
 
