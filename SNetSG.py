@@ -19,7 +19,6 @@ import numpy as np
 from tensorflow.models.embedding import gen_word2vec as word2vec
 
 
-# TODO: do not know how to override the flags in embedding.word2vec
 flags = tf.app.flags
 # flags.DEFINE_integer("relations_num", 5,
 #                      "The number of related words to be considered")

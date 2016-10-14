@@ -43,6 +43,12 @@ class PPDBs4vocab(object):
                         write_line = str(word) + " </s>\n"
                     f_save.write(write_line)
 
+class PPDB_2(object):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        pass
+    def save_ppdb(slef, pkl=False, text=True):
+        pass
+
 if __name__ == "__main__":
     ppdb_s_corpus = PPDBs4vocab()
     ppdb_s_corpus.save_wordnet(True, True)
