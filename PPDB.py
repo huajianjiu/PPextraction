@@ -52,7 +52,10 @@ class PPDB_2(object):
                 self.words = words
         with open(ppdb, "r") as ppdb_f:
             ppdb_paraphrases = {}
-            for line in ppdb_f.readlines():
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
                 if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
                     if (line.split("|||")[-1].strip() == "Equivalence"):
                         ppdb_paraphrases[line.split("|||")[1].strip()] = line.split("|||")[2].strip()
@@ -61,18 +64,23 @@ class PPDB_2(object):
                         ppdb_paraphrases[line.split("|||")[1].strip()] = line.split("|||")[2].strip()
                     elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
                         ppdb_paraphrases[line.split("|||")[2].strip()] = line.split("|||")[1].strip()
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
         self.paraphrases_words=ppdb_paraphrases
         self.paraphrases = np.zeros((len(self.words), relations_num), dtype=np.int32)
         for i, word in enumerate(words):
             if word in ppdb_paraphrases.keys():
                 self.paraphrases[i][0] = self.words.index(ppdb_paraphrases[word])
-    def save_ppdb(slef, pkl=False, text=True):
+    def save_ppdb(self, pkl=False, text=True):
         if pkl:
             with open("ppdb_2_"+self.vocab+".pkl", "wb") as f_save:
                 pickle.dump(self.words, f_save)
                 pickle.dump(self.paraphrases, f_save)
         if text:
             with open("ppdb_2_"+self.vocab+".txt", "w") as f_save:
+                n = 0
                 for word in self.words:
                     if word == "UNK":
                         write_line = "</s> </s>\n"
@@ -81,6 +89,9 @@ class PPDB_2(object):
                     else:
                         write_line = str(word) + " </s>\n"
                     f_save.write(write_line)
+                    n += 1
+                    if n%1000 == 0:
+                        f_save.flush()
 
 
 if __name__ == "__main__":
