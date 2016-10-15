@@ -45,6 +45,7 @@ class PPDBs4vocab(object):
 
 class PPDB_2(object):
     def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        self.relations_num = relations_num = 1
         self.vocab = vocab
         with open(vocab, "r") as f_vocab:
                 words = f_vocab.readlines()
