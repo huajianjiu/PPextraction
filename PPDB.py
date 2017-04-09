@@ -47,42 +47,31 @@ class PPDBs4vocab(object):
 class PPDB_2(object):
     def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
         self.vocab = vocab
+        self.ppdb = ppdb
         self.ppdb_paraphrases = ppdb_paraphrases = {}
         with open(vocab, "r") as f_vocab:
                 words = f_vocab.readlines()
                 words = [x.split()[0] for x in words]
                 self.words = words
-        with open(ppdb, "r") as ppdb_f:
-            lines = ppdb_f.readlines()
-            print "Total lines: " + str(len(lines))
-            n = 0
-            for line in lines:
-                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
-                    baseword = line.split("|||")[1].strip()
-                    ppword = line.split("|||")[2].strip()
-                    if (line.split("|||")[-1].strip() == "Equivalence"):
-                        self.add_paraphrases(baseword, ppword)
-                        self.add_paraphrases(ppword, baseword)
-                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
-                        self.add_paraphrases(baseword, ppword)
-                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
-                        self.add_paraphrases(ppword, baseword)
-                n += 1
-                if n%10000 == 0:
-                    print str(n) + " lines processed."
-        print "Finish. Totally "+str(n)+" lines processed."
+    
+    def read_lexicon(self):
+        print "Abstract Function"
 
     def search_baseword(self, inputword):
         return inputword in self.ppdb_paraphrases.keys()
     
-    def add_paraphrases(self, baseword, ppword):
+    def add_paraphrases(self, baseword, ppword, score):
+        if baseword == ppword:
+            return
         if self.search_baseword(baseword):
-            self.ppdb_paraphrases[baseword].append(ppword)
+            if ppword in self.ppdb_paraphrases[baseword]:
+                return
+            self.ppdb_paraphrases[baseword] += [ppword, score]
         else:
-            self.ppdb_paraphrases[baseword] = [ppword]
+            self.ppdb_paraphrases[baseword] = [ppword, score]
 
-    def save_ppdb(self):
-        with open("ppdb_2_"+self.vocab+".txt", "w") as f_save:
+    def save_ppdb(self, filename):
+        with open(filename, "w") as f_save:
             n = 0
             for word in self.words:
                 if word == "UNK":
@@ -99,10 +88,313 @@ class PPDB_2(object):
                 if n%1000 == 0:
                     f_save.flush()
 
+class PPDB2E(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2E, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+    
+    def save_ppdb(self):
+        "write ppdb2e"
+        super(PPDB2E, self).save_ppdb("ppdb_2_E.txt")
+
+class PPDB2FR(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2FR, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Forward Reverse"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2fr"
+        super(PPDB2FR, self).save_ppdb("ppdb_2_FR.txt")
+
+class PPDB2EFR(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFR, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efr"
+        super(PPDB2EFR, self).save_ppdb("ppdb_2_EFR.txt")
+
+class PPDB2EFRO(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFRO, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse OtherRelated"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "OtherRelated"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efro"
+        super(PPDB2EFRO, self).save_ppdb("ppdb_2_EFRO.txt")
+
+class PPDB2EFROX(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFROX, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse OtherRelated Exclusion"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "OtherRelated"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "Exclusion"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efrox"
+        super(PPDB2EFROX, self).save_ppdb("ppdb_2_EFROX.txt")
+
+class PPDB2EFROI(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFROI, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse OtherRelated Independent"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "OtherRelated"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "Independent"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efroi"
+        super(PPDB2EFROI, self).save_ppdb("ppdb_2_EFROI.txt")
+
+class PPDB2EFRI(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFRI, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse Independent"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "Independent"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efri"
+        super(PPDB2EFRI, self).save_ppdb("ppdb_2_EFRI.txt")
+
+class PPDB2EFRX(PPDB_2):
+    def __init__(self, vocab="vocab.txt", ppdb="ppdb-2.0-tldr"):
+        super(PPDB2EFRX, self).__init__(vocab, ppdb)
+
+    def read_lexicon(self):
+        print "read Equivalence Forward Reverse Exclusive"
+        words = self.words
+        ppdb = self.ppdb
+        with open(ppdb, "r") as ppdb_f:
+            lines = ppdb_f.readlines()
+            print "Total lines: " + str(len(lines))
+            n = 0
+            for line in lines:
+                if (line.split("|||")[1].strip() in words) and (line.split("|||")[2].strip() in words):
+                    baseword = line.split("|||")[1].strip()
+                    ppword = line.split("|||")[2].strip()
+                    score = line.split("|||")[3].split(" ")[1].split("=")[1]
+                    if (line.split("|||")[-1].strip() == "Equivalence"):
+                        self.add_paraphrases(baseword, ppword, score)
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "ForwardEntailment"):
+                        self.add_paraphrases(baseword, ppword, score)
+                    elif (line.split("|||")[-1].strip() == "ReverseEntailment"):
+                        self.add_paraphrases(ppword, baseword, score)
+                    elif (line.split("|||")[-1].strip() == "Exclusion"):
+                        self.add_paraphrases(ppword, baseword, score)
+                        self.add_paraphrases(baseword, ppword, score)
+                n += 1
+                if n%10000 == 0:
+                    print str(n) + " lines processed."
+        print "Finish. Totally "+str(n)+" lines processed."
+
+    def save_ppdb(self):
+        "write ppdb2efrx"
+        super(PPDB2EFRX, self).save_ppdb("ppdb_2_EFRX.txt")
+
 
 if __name__ == "__main__":
     if len(sys.argv)>1:
-        ppdb_s_corpus = PPDB_2("vocab.txt", sys.argv[1])
+        vocab = sys.argv[1]
+        lexicon = sys.argv[2]
     else:
-        ppdb_s_corpus = PPDB_2()
-    ppdb_s_corpus.save_ppdb()
+        vocab = "vocab.txt"
+        lexicon = "ppdb-2.0-tldr"
+    # ppdb = PPDB2E(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()
+    # ppdb = PPDB2FR(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()
+    # ppdb = PPDB2EFR(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()
+    # ppdb = PPDB2EFRO(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()    
+    # ppdb = PPDB2EFROX(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()    
+    # ppdb = PPDB2EFROI(vocab, lexicon)
+    # ppdb.read_lexicon()
+    # ppdb.save_ppdb()
+    ppdb = PPDB2EFRI(vocab, lexicon)
+    ppdb.read_lexicon()
+    ppdb.save_ppdb()  
+    ppdb = PPDB2EFRX(vocab, lexicon)
+    ppdb.read_lexicon()
+    ppdb.save_ppdb()  
